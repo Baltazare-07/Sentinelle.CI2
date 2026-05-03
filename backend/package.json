@@ -1,21 +1,14 @@
 {
-    "name": "signalement-backend",
-    "version": "1.0.0",
-    "description": "API backend pour SentinelleCI avec blockchain",
-    "main": "app.js",
-    "scripts": {
-        "start": "node app.js",
-        "dev": "nodemon app.js"
-    },
-    "dependencies": {
-        "cors": "^2.8.6",
-        "dotenv": "^16.6.1",
-        "ethers": "^6.10.0",
-        "express": "^4.22.1",
-        "web3": "^4.16.0"
-    },
-    "devDependencies": {
-        "nodemon": "^3.0.1"
-    },
-    "type": "commonjs"
+  "name": "sentinelleci-backend",
+  "version": "1.0.0",
+  "description": "Backend blockchain SentinelleCI",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "web3": "^4.0.0"
+  }
 }
