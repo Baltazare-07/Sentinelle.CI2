@@ -170,6 +170,42 @@ elif st.session_state.page == 'nouveau_signalement':
         st.session_state.selected_type = type_probleme
         st.info(f"Sélectionné: {type_probleme}")
     
+    # ========== SECTION PHOTO ==========
+    st.markdown("### 📸 Photo du problème")
+    
+    # Deux onglets : Prendre une photo ou Uploader
+    tab1, tab2 = st.tabs(["📷 Prendre une photo", "📁 Upload depuis galerie"])
+    
+    photo_data = None
+    
+    with tab1:
+        st.markdown("**Prendre une photo avec la caméra**")
+        # Utilisation de la caméra (nécessite caméra sur l'appareil)
+        camera_photo = st.camera_input("Prenez une photo", label_visibility="collapsed")
+        if camera_photo:
+            photo_data = camera_photo
+            st.success("✅ Photo prise avec succès !")
+            st.image(photo_data, caption="Aperçu", width=200)
+    
+    with tab2:
+        st.markdown("**Uploader une photo existante**")
+        uploaded_file = st.file_uploader(
+            "Choisissez une photo",
+            type=['jpg', 'jpeg', 'png', 'webp'],
+            label_visibility="collapsed",
+            help="Formats acceptés: JPG, PNG, WEBP (max 10MB)"
+        )
+        if uploaded_file:
+            photo_data = uploaded_file
+            st.success("✅ Photo uploadée avec succès !")
+            st.image(photo_data, caption="Aperçu", width=200)
+    
+    # Afficher un message si aucune photo
+    if not photo_data:
+        st.info("💡 Vous pouvez ajouter une photo pour illustrer votre signalement (optionnel)")
+    
+    st.markdown("---")
+    
     # Description
     description = st.text_area("Description (optionnelle)", placeholder="Décrivez le problème...")
     
@@ -194,11 +230,23 @@ elif st.session_state.page == 'nouveau_signalement':
             
             try:
                 with st.spinner("⏳ Enregistrement sur la blockchain en cours..."):
-                    response = requests.post(
-                        'http://localhost:3001/api/signalements',
-                        json=signalement_data,
-                        timeout=10
-                    )
+                    # Si photo présente, on l'envoie aussi (optionnel)
+                    files = None
+                    if photo_data:
+                        # Préparer l'envoi avec fichier
+                        files = {'photo': ('photo.jpg', photo_data.getvalue(), 'image/jpeg')}
+                        response = requests.post(
+                            'http://localhost:3001/api/signalements',
+                            data=signalement_data,
+                            files=files,
+                            timeout=30
+                        )
+                    else:
+                        response = requests.post(
+                            'http://localhost:3001/api/signalements',
+                            json=signalement_data,
+                            timeout=10
+                        )
                     
                     if response.status_code in [200, 201]:
                         result = response.json()
@@ -217,7 +265,8 @@ elif st.session_state.page == 'nouveau_signalement':
                             'lng': signalement_data['longitude'],
                             'description': description,
                             'tx_hash': tx_hash,
-                            'blockchain_url': blockchain_url
+                            'blockchain_url': blockchain_url,
+                            'has_photo': photo_data is not None  # Indicateur présence photo
                         })
                         
                         st.success(f"✅ Signalement enregistré avec succès sur la blockchain !")
@@ -225,6 +274,12 @@ elif st.session_state.page == 'nouveau_signalement':
                         st.markdown(f"🔗 **Hash transaction:** `{short_hash}`")
                         if blockchain_url:
                             st.markdown(f"[🔍 **Vérifier sur Etherscan**]({blockchain_url})")
+                        
+                        # Afficher l'aperçu de la photo si présente
+                        if photo_data:
+                            st.markdown("### 📸 Photo associée au signalement")
+                            st.image(photo_data, caption="Preuve visuelle", width=300)
+                        
                         st.balloons()
                         
                         # Retour à l'accueil
