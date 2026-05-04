@@ -1,23 +1,23 @@
 import os
-from folium.plugins import LocateControl
 import streamlit as st
 import datetime
 import random
 from streamlit_folium import st_folium
 import folium
+from folium.plugins import LocateControl
 import requests
 
-# Configuration du backend
-# Changement automatique entre local et production
-if os.environ.get('RENDER') or os.environ.get('STREAMLIT_CLOUD'):
-    BACKEND_URL = 'https://sentinelleci-backend.onrender.com'
-else:
-    BACKEND_URL = 'http://localhost:3001'
 
+# ==================== CONFIGURATION DE LA PAGE ====================
+st.set_page_config(
+    page_title="SentinelleCI",
+    page_icon="📍",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# Configuration de la page
 # ==================== ENTÊTE COMPLÈTE SENTINELLE.CI ====================
-
+#configuration de la page
 # Barre supérieure avec dégradé vert
 st.markdown("""
 <div style="background: linear-gradient(135deg, #1a5e2a 0%, #2d8a3e 100%);
@@ -51,7 +51,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Barre de recherche
+# ==================== BARRE DE RECHERCHE ====================
 st.markdown("""
 <div style="margin: -10px 20px 20px 20px;">
     <div style="background: white;
@@ -61,26 +61,47 @@ st.markdown("""
                 display: flex;
                 align-items: center;
                 gap: 10px;">
-        <span style="font-size: 18px;">🔍</span>
+        <span style="font-size: 18px; color: #6c757d;">🔍</span>
         <input type="text" 
-               placeholder="Rechercher un quartier, une adresse..." 
+               id="search_input"
+               placeholder="Rechercher un quartier, une adresse ou un signalement..." 
                style="flex: 1;
                       border: none;
                       padding: 12px 0;
                       font-size: 14px;
-                      outline: none;">
-        <button style="background: linear-gradient(135deg, #1a5e2a 0%, #2d8a3e 100%);
+                      outline: none;
+                      background: transparent;">
+        <button id="search_button"
+                style="background: linear-gradient(135deg, #1a5e2a 0%, #2d8a3e 100%);
                       border: none;
                       color: white;
-                      padding: 10px 25px;
+                      padding: 10px 30px;
                       border-radius: 50px;
                       cursor: pointer;
-                      font-weight: bold;">
+                      font-weight: 600;
+                      transition: transform 0.2s;">
             Rechercher
         </button>
     </div>
 </div>
+
+<script>
+    document.getElementById('search_button').addEventListener('click', function() {
+        var query = document.getElementById('search_input').value;
+        if (query) {
+            alert("Recherche : " + query + "\\n(Fonctionnalité à implémenter)");
+        }
+    });
+</script>
 """, unsafe_allow_html=True)
+
+# Configuration du backend
+# Changement automatique entre local et production
+if os.environ.get('RENDER') or os.environ.get('STREAMLIT_CLOUD'):
+    BACKEND_URL = 'https://sentinelleci-backend.onrender.com'
+else:
+    BACKEND_URL = 'http://localhost:3001'
+
 
 st.markdown("---")
 
