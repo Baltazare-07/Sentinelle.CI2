@@ -9,10 +9,13 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+<<<<<<< HEAD
       - key: SPONSOR_PRIVATE_KEY
         sync: false
       - key: SPONSOR_ADDRESS
         sync: false
+=======
+>>>>>>> ae421db4 (Ajout du backend Flask pour les transactions blockchain)
       - key: USE_REAL_TX
         value: "false"
     healthCheckPath: /api/health
