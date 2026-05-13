@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: sentinelle-backend
+    runtime: python
+    repo: https://github.com/Baltazare-07/Sentinelle.CI2
+    branch: main
+    buildCommand: pip install -r requirements-backend.txt
+    startCommand: gunicorn backend:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SPONSOR_PRIVATE_KEY
+        sync: false
+      - key: SPONSOR_ADDRESS
+        sync: false
+      - key: USE_REAL_TX
+        value: "false"
+    healthCheckPath: /api/health
+    autoDeploy: true
