@@ -98,3 +98,22 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Backend API sur le port ${PORT}`);
 });
+
+app.post('/api/signalements', (req, res) => {
+    console.log("📨 Requête POST reçue sur /api/signalements");
+    console.log("Body:", req.body);
+    // ... reste du code
+});
+
+app.get('/api/signalements', (req, res) => {
+    console.log("📨 Requête GET reçue sur /api/signalements");
+    // ...
+});
+
+app.put('/api/signalements/:id', (req, res) => {
+    const id = req.params.id;
+    const update = req.body;
+    // trouver le signalement et mettre à jour tx_hash
+    // ...
+    res.json({ success: true });
+});

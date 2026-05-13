@@ -1,0 +1,101 @@
+<!-- metamask_widget.html -->
+<div id="mm-container">
+    <div id="mm-status" style="padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 14px;"></div>
+    <button id="mm-connect" style="
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        width: 100%;
+    ">
+        🦊 Connecter MetaMask
+    </button>
+</div>
+
+<script>
+    const container = document.getElementById('mm-container');
+    const statusDiv = document.getElementById('mm-status');
+    const connectBtn = document.getElementById('mm-connect');
+
+    function sendToStreamlit(data) {
+        window.parent.postMessage({
+            type: "streamlit:setComponentValue",
+            value: data
+        }, "*");
+    }
+
+    async function connectMetaMask() {
+        if (typeof window.ethereum === 'undefined') {
+            statusDiv.innerHTML = '❌ MetaMask non installé. Installez l\'extension.';
+            statusDiv.style.background = '#ffebee';
+            statusDiv.style.color = '#c62828';
+            sendToStreamlit({ connected: false, error: 'MetaMask not installed' });
+            return;
+        }
+
+        try {
+            // Demander les comptes
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const account = accounts[0];
+
+            // Vérifier et ajouter le réseau Sepolia avec RPC alternatif
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0xaa36a7' }]
+                });
+            } catch (switchError) {
+                // Ajouter le réseau Sepolia s'il n'existe pas
+                if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0xaa36a7',
+                            chainName: 'Sepolia Test Network',
+                            nativeCurrency: {
+                                name: 'SepoliaETH',
+                                symbol: 'ETH',
+                                decimals: 18
+                            },
+                            rpcUrls: ['https://rpc.ankr.com/eth_sepolia', 'https://ethereum-sepolia.publicnode.com'],
+                            blockExplorerUrls: ['https://sepolia.etherscan.io']
+                        }]
+                    });
+                } else {
+                    throw switchError;
+                }
+            }
+
+            statusDiv.innerHTML = `✅ Connecté : ${account.substring(0, 6)}...${account.substring(38)}`;
+            statusDiv.style.background = '#e8f5e9';
+            statusDiv.style.color = '#2e7d32';
+            connectBtn.style.display = 'none';
+
+            sendToStreamlit({
+                connected: true,
+                address: account,
+                chainId: await window.ethereum.request({ method: 'eth_chainId' })
+            });
+
+        } catch (error) {
+            statusDiv.innerHTML = '❌ Erreur: ' + error.message;
+            statusDiv.style.background = '#ffebee';
+            statusDiv.style.color = '#c62828';
+            sendToStreamlit({ connected: false, error: error.message });
+        }
+    }
+
+    connectBtn.onclick = connectMetaMask;
+
+    // Si déjà connecté, vérifier le statut
+    if (window.ethereum) {
+        window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+            if (accounts.length > 0) {
+                connectMetaMask();
+            }
+        });
+    }
+</script>

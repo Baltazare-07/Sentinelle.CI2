@@ -1,0 +1,27 @@
+<!-- components/connect_wallet.html -->
+<div id="wallet-status"></div>
+<button id="connectBtn">🔌 Connecter MetaMask</button>
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script>
+    const connectBtn = document.getElementById('connectBtn');
+    const statusDiv = document.getElementById('wallet-status');
+
+    connectBtn.onclick = async () => {
+        if (typeof window.ethereum !== 'undefined') {
+            try {
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                const address = accounts[0];
+                statusDiv.innerHTML = `✅ Connecté : ${address.slice(0, 6)}...${address.slice(-4)}`;
+                // Envoi de l'adresse à Streamlit via un événement personnalisé
+                const event = new CustomEvent('streamlit:setComponentValue', {
+                    detail: { value: address }
+                });
+                window.dispatchEvent(event);
+            } catch (err) {
+                statusDiv.innerHTML = `❌ Erreur : ${err.message}`;
+            }
+        } else {
+            statusDiv.innerHTML = '🦊 MetaMask non détecté';
+        }
+    };
+</script>

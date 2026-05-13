@@ -1,0 +1,154 @@
+<!-- metamask_component.html -->
+<div id="metamask-container">
+    <div id="status" style="padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 13px;">
+        🔄 Chargement...
+    </div>
+    <button id="connect-btn" style="
+        background: linear-gradient(135deg, #1a5e2a 0%, #2d8a3e 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        width: 100%;
+    ">
+        🦊 Connecter MetaMask
+    </button>
+</div>
+
+<script>
+    const container = document.getElementById('metamask-container');
+    const statusDiv = document.getElementById('status');
+    const connectBtn = document.getElementById('connect-btn');
+
+    function sendToStreamlit(data) {
+        window.parent.postMessage({
+            type: "streamlit:setComponentValue",
+            value: data
+        }, "*");
+    }
+
+    function updateStatus(message, isError = false, isSuccess = false) {
+        statusDiv.innerHTML = message;
+        if (isError) {
+            statusDiv.style.background = '#ffebee';
+            statusDiv.style.color = '#c62828';
+        } else if (isSuccess) {
+            statusDiv.style.background = '#e8f5e9';
+            statusDiv.style.color = '#2e7d32';
+        } else {
+            statusDiv.style.background = '#fff3e0';
+            statusDiv.style.color = '#e65100';
+        }
+    }
+
+    async function connectWallet() {
+        // Vérifier si MetaMask est installé
+        if (typeof window.ethereum === 'undefined') {
+            updateStatus('❌ MetaMask non installé. Installez l\'extension', true);
+            sendToStreamlit({ connected: false, error: 'MetaMask not installed' });
+            return;
+        }
+
+        updateStatus('🔄 Connexion en cours...');
+
+        try {
+            // Demander l'accès aux comptes
+            const accounts = await window.ethereum.request({
+                method: 'eth_requestAccounts'
+            });
+
+            if (!accounts || accounts.length === 0) {
+                updateStatus('❌ Aucun compte trouvé', true);
+                sendToStreamlit({ connected: false, error: 'No accounts' });
+                return;
+            }
+
+            const account = accounts[0];
+
+            // Vérifier le réseau
+            let chainId = await window.ethereum.request({ method: 'eth_chainId' });
+
+            // Si ce n'est pas Sepolia, demander le changement
+            if (chainId !== '0xaa36a7') {
+                updateStatus('🔄 Changement de réseau vers Sepolia...');
+
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0xaa36a7' }]
+                    });
+                    chainId = '0xaa36a7';
+                } catch (switchError) {
+                    // Si Sepolia n'existe pas, l'ajouter
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: '0xaa36a7',
+                                chainName: 'Sepolia Test Network',
+                                nativeCurrency: {
+                                    name: 'SepoliaETH',
+                                    symbol: 'ETH',
+                                    decimals: 18
+                                },
+                                rpcUrls: ['https://rpc.ankr.com/eth_sepolia'],
+                                blockExplorerUrls: ['https://sepolia.etherscan.io']
+                            }]
+                        });
+                    } else {
+                        throw switchError;
+                    }
+                }
+            }
+
+            // Succès
+            const shortAddress = `${account.substring(0, 6)}...${account.substring(38)}`;
+            updateStatus(`✅ Connecté: ${shortAddress}`, false, true);
+            connectBtn.style.display = 'none';
+
+            sendToStreamlit({
+                connected: true,
+                address: account,
+                chainId: chainId
+            });
+
+        } catch (error) {
+            console.error(error);
+            updateStatus(`❌ Erreur: ${error.message}`, true);
+            sendToStreamlit({ connected: false, error: error.message });
+        }
+    }
+
+    // Écouter les changements de compte
+    if (window.ethereum) {
+        window.ethereum.on('accountsChanged', (accounts) => {
+            if (accounts.length === 0) {
+                updateStatus('🔴 Wallet déconnecté', true);
+                connectBtn.style.display = 'block';
+                sendToStreamlit({ connected: false });
+                st.sessionState.wallet_connected = false;
+            } else {
+                connectWallet();
+            }
+        });
+
+        window.ethereum.on('chainChanged', (chainId) => {
+            if (chainId === '0xaa36a7') {
+                connectWallet();
+            } else {
+                updateStatus('⚠️ Veuillez basculer sur Sepolia', true);
+                connectBtn.style.display = 'block';
+                sendToStreamlit({ connected: false, error: 'Wrong network' });
+            }
+        });
+    }
+
+    // Vérifier si déjà connecté au chargement
+    if (window.ethereum && window.ethereum.selectedAddress) {
+        connectWallet();
+    }
+
+    connectBtn.onclick = connectWallet;
+</script>

@@ -1,0 +1,156 @@
+<!-- metamask_component.html - Version avec sortie d'iframe -->
+<div id="metamask-container">
+    <div id="status" style="padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 13px;">
+        🔄 Détection de MetaMask...
+    </div>
+    <button id="connect-btn" style="
+        background: linear-gradient(135deg, #1a5e2a 0%, #2d8a3e 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        width: 100%;
+    ">
+        🦊 Connecter MetaMask
+    </button>
+    <div id="warning" style="margin-top: 10px; font-size: 12px; display: none;"></div>
+</div>
+
+<script>
+    const container = document.getElementById('metamask-container');
+    const statusDiv = document.getElementById('status');
+    const connectBtn = document.getElementById('connect-btn');
+    const warningDiv = document.getElementById('warning');
+
+    // Vérifier si on est dans un iframe
+    if (window.self !== window.top) {
+        warningDiv.style.display = 'block';
+        warningDiv.innerHTML = '⚠️ Application dans un iframe. <a href="#" id="open-new-window">Ouvrir dans un nouvel onglet</a>';
+        warningDiv.style.background = '#fff3e0';
+        warningDiv.style.padding = '8px';
+        warningDiv.style.borderRadius = '5px';
+
+        document.getElementById('open-new-window').onclick = function () {
+            window.top.location = window.location;
+            return false;
+        };
+    }
+
+    function sendToStreamlit(data) {
+        window.parent.postMessage({
+            type: "streamlit:setComponentValue",
+            value: data
+        }, "*");
+    }
+
+    function updateStatus(message, isError = false, isSuccess = false) {
+        statusDiv.innerHTML = message;
+        if (isError) {
+            statusDiv.style.background = '#ffebee';
+            statusDiv.style.color = '#c62828';
+        } else if (isSuccess) {
+            statusDiv.style.background = '#e8f5e9';
+            statusDiv.style.color = '#2e7d32';
+        } else {
+            statusDiv.style.background = '#fff3e0';
+            statusDiv.style.color = '#e65100';
+        }
+    }
+
+    async function connectWallet() {
+        // Vérifier plusieurs façons si MetaMask est installé
+        const isMetaMaskInstalled = typeof window.ethereum !== 'undefined' ||
+            (typeof window.web3 !== 'undefined');
+
+        if (!isMetaMaskInstalled) {
+            updateStatus('❌ MetaMask non détecté', true);
+            warningDiv.style.display = 'block';
+            warningDiv.innerHTML = `
+                <div style="background:#ffebee; padding:8px; border-radius:5px;">
+                    <b>🔧 Solutions :</b><br>
+                    1. Ouvrez cette URL directement dans Chrome: <b>${window.location.origin}</b><br>
+                    2. Rafraîchissez la page (F5)<br>
+                    3. <a href="https://metamask.io/download/" target="_blank">Installer/Activer MetaMask</a>
+                </div>
+            `;
+            sendToStreamlit({ connected: false, error: 'MetaMask not installed' });
+            return;
+        }
+
+        updateStatus('🔄 Connexion en cours...');
+
+        try {
+            const accounts = await window.ethereum.request({
+                method: 'eth_requestAccounts'
+            });
+
+            if (!accounts || accounts.length === 0) {
+                updateStatus('❌ Aucun compte trouvé', true);
+                sendToStreamlit({ connected: false, error: 'No accounts' });
+                return;
+            }
+
+            const account = accounts[0];
+
+            // Vérifier le réseau Sepolia
+            let chainId = await window.ethereum.request({ method: 'eth_chainId' });
+
+            if (chainId !== '0xaa36a7') {
+                updateStatus('🔄 Changement vers Sepolia...');
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0xaa36a7' }]
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: '0xaa36a7',
+                                chainName: 'Sepolia Test Network',
+                                nativeCurrency: {
+                                    name: 'SepoliaETH',
+                                    symbol: 'ETH',
+                                    decimals: 18
+                                },
+                                rpcUrls: ['https://rpc.ankr.com/eth_sepolia'],
+                                blockExplorerUrls: ['https://sepolia.etherscan.io']
+                            }]
+                        });
+                    } else {
+                        throw switchError;
+                    }
+                }
+            }
+
+            const shortAddress = `${account.substring(0, 6)}...${account.substring(38)}`;
+            updateStatus(`✅ Connecté: ${shortAddress}`, false, true);
+            connectBtn.style.display = 'none';
+
+            sendToStreamlit({
+                connected: true,
+                address: account,
+                chainId: chainId
+            });
+
+        } catch (error) {
+            console.error(error);
+            updateStatus(`❌ Erreur: ${error.message}`, true);
+            sendToStreamlit({ connected: false, error: error.message });
+        }
+    }
+
+    connectBtn.onclick = connectWallet;
+
+    // Détection automatique
+    setTimeout(() => {
+        if (window.ethereum && window.ethereum.selectedAddress) {
+            connectWallet();
+        } else if (!window.ethereum) {
+            updateStatus('❌ MetaMask non détecté', true);
+        }
+    }, 1000);
+</script>
