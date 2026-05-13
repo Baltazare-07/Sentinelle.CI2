@@ -1132,9 +1132,35 @@ if 'wallet_connected' not in st.session_state:
 
 # Configuration du backend
 if os.environ.get('RENDER') or os.environ.get('STREAMLIT_CLOUD'):
-    BACKEND_URL = "http://localhost:5000"
-else:
-    BACKEND_URL = "http://127.0.0.1:5000"
+    # En production sur Render
+    BACKEND_URL = os.environ.get('BACKEND_URL', 'https://sentinelle-backend.onrender.com')
+
+# Ajoutez un test de connexion au backend
+def check_backend_health():
+    try:
+        response = requests.get(f"{BACKEND_URL}/api/health", timeout=5)
+        return response.status_code == 200
+    except:
+        return False
+
+# Dans la section d'envoi du signalement, utilisez :
+if submitted:
+    if check_backend_health():
+        # Envoyer au backend
+        try:
+            response = requests.post(
+                f"{BACKEND_URL}/api/sponsor",
+                json={...},
+                timeout=30
+            )
+            # ... traitement
+        except Exception as e:
+            st.error(f"Backend indisponible: {e}")
+    else:
+        # Fallback en local
+        st.warning("Backend hors ligne, sauvegarde locale...")
+        # Sauvegarder localement
+        dummy_hash = f"0x{hashlib.sha256(...)}"
 
 def load_signalements_from_backend():
     try:
