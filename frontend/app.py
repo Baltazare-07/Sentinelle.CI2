@@ -1142,8 +1142,7 @@ def check_backend_health():
         return response.status_code == 200
     except:
         return False
-
-submitted = st.button("🚀 SIGNALER SUR BLOCKCHAIN", type="primary", width='stretch', key="submit_nv")
+        
 if 'submitted' not in st.session_state:
     st.session_state.submitted = False
 # Dans la section d'envoi du signalement, utilisez :
