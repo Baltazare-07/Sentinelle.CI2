@@ -1143,29 +1143,6 @@ def check_backend_health():
     except:
         return False
         
-if 'submitted' not in st.session_state:
-    st.session_state.submitted = False
-# Dans la section d'envoi du signalement, utilisez :
-if submitted:
-    if check_backend_health():
-        # Envoyer au backend
-        try:
-            response = requests.post(
-                f"{BACKEND_URL}/api/sponsor",
-                json={...},
-                timeout=30
-            )
-            # ... traitement
-        except Exception as e:
-            st.error(f"Backend indisponible: {e}")
-    else:
-        # Fallback en local
-        st.warning("Backend hors ligne, sauvegarde locale...")
-        # Sauvegarder localement
-        dummy_hash = f"0x{hashlib.sha256(...)}"
-        st.info(f"Signalement sauvegardé localement avec hash: {dummy_hash}")
-        st.session_state.submitted = False
-        
 def load_signalements_from_backend():
     try:
         response = requests.get(f"{BACKEND_URL}/api/signalements", timeout=3)
