@@ -1134,7 +1134,8 @@ if 'wallet_connected' not in st.session_state:
 if os.environ.get('RENDER') or os.environ.get('STREAMLIT_CLOUD'):
     # En production sur Render
     BACKEND_URL = os.environ.get('BACKEND_URL', 'https://sentinelle-backend.onrender.com')
-
+if 'submitted' not in st.session_state:
+    st.session_state.submitted = False
 # Ajoutez un test de connexion au backend
 def check_backend_health():
     try:
