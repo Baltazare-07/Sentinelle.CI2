@@ -14,6 +14,8 @@ import hashlib
 import time
 import io
 import xlsxwriter
+from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 
 
